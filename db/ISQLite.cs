@@ -8,7 +8,7 @@ using Xamarin.Forms.Internals;
 
 namespace XamEntityManager.db
 {
-	[PreserveAttribute]
+	[Preserve]
     public interface ISQLite
     {
         SQLiteConnection GetConnection();

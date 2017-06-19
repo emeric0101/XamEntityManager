@@ -1,18 +1,29 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>$id$</id>
-    <version>$version$</version>
-    <title>$title$</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
-    <licenseUrl>http://LICENSE_URL_HERE_OR_DELETE_THIS_LINE</licenseUrl>
-    <projectUrl>http://PROJECT_URL_HERE_OR_DELETE_THIS_LINE</projectUrl>
-    <iconUrl>http://ICON_URL_HERE_OR_DELETE_THIS_LINE</iconUrl>
-    <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
-    <releaseNotes>Summary of changes made in this release of the package.</releaseNotes>
-    <copyright>Copyright 2017</copyright>
-    <tags>Tag1 Tag2</tags>
+    <id>XamEntityManager.Emeric0101</id>
+    <version>1.0.1-alpha</version>
+    <title>XamEntityManager</title>
+    <authors>Emeric0101</authors>
+    <owners>Emeric0101</owners>
+    <licenseUrl>http://www.apache.org/licenses/LICENSE-2.0</licenseUrl>
+    <projectUrl>https://github.com/emeric0101/XamEntityManager</projectUrl>
+    <requireLicenseAcceptance>true</requireLicenseAcceptance>
+    <description>A simple way to connect your app to a PHP Server.</description>
+    <releaseNotes>First version</releaseNotes>
+    <copyright>APACHE LICENSE 2.0 - Emeric BAVEUX</copyright>
+    <tags>Xamarin Rest server web entity</tags>
+      <dependencies>
+        <group targetFramework="portable45-net45+win8+wpa81">
+		  <dependency id="Newtonsoft.Json" version="10.0.2"  />
+		  <dependency id="SQLite.Net.Core-PCL" version="3.1.1" />
+		  <dependency id="Xamarin.Auth" version="1.5.0.1"  />
+		  <dependency id="Xamarin.Forms" version="2.3.4.247"  />
+        </group>
+
+    </dependencies>
   </metadata>
+  <files>
+	<file src="bin\Release\XamEntityManager.dll" target="lib\portable45-net45+win8+wpa81\XamEntityManager.dll" />
+  </files>
 </package>

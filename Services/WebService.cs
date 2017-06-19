@@ -152,7 +152,7 @@ namespace XamEntityManager.Service
 
             using (HttpClient httpClient = new HttpClient())
             {
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "doggiappli");
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager");
                 try
                 {
 
