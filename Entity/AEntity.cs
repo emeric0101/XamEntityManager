@@ -153,8 +153,11 @@ namespace XamEntityManager.Entity
         /// <param name="property"></param>
         public void OnPropertyChanged(string property)
         {
+            Dirty = true;
             PropertyChanged.Invoke(this, new PropertyChangedEventArgs(property));
         }
+
+        [Obsolete("Assign directly and use OnPropertyChanged")]
         public void setField(string name, dynamic value)
         {
 			
@@ -170,7 +173,6 @@ namespace XamEntityManager.Entity
             {
                 throw new Exception("No property found : " + name);
             }
-            Dirty = true;
             field.First().SetValue(this, value);
 
 			name = char.ToUpper(name[0]) + name.Substring(1);
