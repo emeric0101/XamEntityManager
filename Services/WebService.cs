@@ -38,7 +38,7 @@ namespace XamEntityManager.Service
             typeof(UrlService)
         };
         UrlService urlService;
-		[PreserveAttribute]
+		[Preserve]
         public WebService(UrlService url)
         {
             urlService = url;
@@ -74,23 +74,27 @@ namespace XamEntityManager.Service
             return await getAsync(url);
 
         }
-        async public Task<JObject> getAsync(string url)
+        /// <summary>
+        /// Perform a simple get request (without checking result)
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        async public Task<HttpResponseMessage> getOutsideAsync(string url)
         {
             var id = postId++;
-            Debug.WriteLine("getAsync : " + id  + " " + url);
-            string content = "";
+            Debug.WriteLine("getAsync : " + id + " " + url);
+            HttpResponseMessage msg = null;
             using (HttpClient httpClient = new HttpClient())
             {
                 httpClient.DefaultRequestHeaders.Add("User-Agent", "doggiappli");
                 try
                 {
-                    HttpResponseMessage msg = await httpClient.GetAsync(url);
+                    msg = await httpClient.GetAsync(url);
                     if (msg == null)
                     {
                         Debug.WriteLine("getAsync : msg is null");
                         throw new WebServiceBadResultException();
                     }
-                    content = await msg.Content.ReadAsStringAsync();
                 }
                 catch (Exception e)
                 {
@@ -98,7 +102,19 @@ namespace XamEntityManager.Service
                     throw new WebServiceBadResultException();
                 }
                 Debug.WriteLine("getAsync " + id + " Done ");
+                return msg;
             }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        async public Task<JObject> getAsync(string url)
+        {     
+            HttpResponseMessage response = await getOutsideAsync(url);
+            string content = await response.Content.ReadAsStringAsync();
 
             //Debug.WriteLine("getAsync response : " + content);
             JObject data = JObject.Parse(content);
@@ -177,8 +193,43 @@ namespace XamEntityManager.Service
                    JObject data = JObject.Parse(responseStr);
             return parseResponse(data);
         }
+        /// <summary>
+        /// Download and save a file
+        /// </summary>
+        /// <param name="url"></param>
+        /// <returns></returns>
+        public async Task<string> DownloadAndSaveFileAsync(string url, string filename, bool replace = false)
+        {
+            PCLStorage.IFile file;
+            try
+            {
+                if (replace)
+                {
+                    throw new PCLStorage.Exceptions.FileNotFoundException("replace needed");
+                }
+                file = await PCLStorage.FileSystem.Current.LocalStorage.GetFileAsync(filename);
+            }
+            catch (PCLStorage.Exceptions.FileNotFoundException)
+            {
+                // Download
+                byte[] fileBytes = await DownloadFileAsync(url);
 
-		public async Task<byte[]> DownloadFileAsync(string url)
+                file = await PCLStorage.FileSystem.Current.LocalStorage.CreateFileAsync(filename, PCLStorage.CreationCollisionOption.ReplaceExisting);
+          
+                using (var streamFile = await file.OpenAsync(PCLStorage.FileAccess.ReadAndWrite))
+                {
+                    await streamFile.WriteAsync(fileBytes, 0, fileBytes.Length);
+                    await streamFile.FlushAsync();
+                }
+                
+ 
+  
+            }
+            return file.Path;
+
+        }
+
+        public async Task<byte[]> DownloadFileAsync(string url)
 		{
 			using (HttpClient httpClient = new HttpClient())
 			{
