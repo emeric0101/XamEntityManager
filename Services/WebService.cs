@@ -12,6 +12,15 @@ using Xamarin.Forms.Internals;
 
 namespace XamEntityManager.Service
 {
+    public class WebServiceJsonErrorException : Exception
+    {
+        public JsonReaderException JsonException { get; set; }
+        public WebServiceJsonErrorException(string content, JsonReaderException jsonex) : base(content)
+        {
+            JsonException = jsonex;
+        }
+    }
+
     public class WebServiceFalseResultException : Exception {
         string errorMsg;
         public WebServiceFalseResultException(string errorMsg)
@@ -50,8 +59,18 @@ namespace XamEntityManager.Service
         /// </summary>
         /// <param name="data"></param>
         /// <returns></returns>
-        private JObject parseResponse(JObject data)
+        private JObject parseResponse(string json)
         {
+            JObject data;
+            try
+            {
+                data = JObject.Parse(json);
+            }
+            catch (JsonReaderException jsonEx)
+            {
+                throw new WebServiceJsonErrorException(json, jsonEx);
+            }
+
             if (data["success"] == null)
             {
                 throw new WebServiceBadResultException();
@@ -117,8 +136,7 @@ namespace XamEntityManager.Service
             string content = await response.Content.ReadAsStringAsync();
 
             //Debug.WriteLine("getAsync response : " + content);
-            JObject data = JObject.Parse(content);
-            return parseResponse(data); ;
+            return parseResponse(content); ;
         }
 
         async public Task<JObject> postJpgAsync(string module, string action, Stream file)
@@ -139,8 +157,7 @@ namespace XamEntityManager.Service
                     }
                     var responseStr = await msg.Content.ReadAsStringAsync();
                     //Debug.WriteLine("postAsync response : " + responseStr);
-                    JObject data = JObject.Parse(responseStr);
-                    return parseResponse(data);
+                    return parseResponse(responseStr);
                 }
                 catch (Exception e)
                 {
@@ -188,10 +205,10 @@ namespace XamEntityManager.Service
             }
 
 
-			//Debug.WriteLine("postAsync " + id + "response : " + responseStr);
-			//Debug.WriteLine("postAsync " + id + " done");
-                   JObject data = JObject.Parse(responseStr);
-            return parseResponse(data);
+            //Debug.WriteLine("postAsync " + id + "response : " + responseStr);
+            //Debug.WriteLine("postAsync " + id + " done");
+
+            return parseResponse(responseStr);
         }
         /// <summary>
         /// Download and save a file
