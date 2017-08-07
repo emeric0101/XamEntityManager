@@ -11,6 +11,6 @@ namespace XamEntityManager.db
 	[Preserve]
     public interface ISQLite
     {
-        SQLiteConnection GetConnection();
+        SQLiteConnection GetConnection(string dbname);
     }
 }

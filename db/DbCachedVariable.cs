@@ -8,18 +8,36 @@ using Xamarin.Forms.Internals;
 
 namespace XamEntityManager.db
 {
-	[Preserve(AllMembers=true)]
-    public class DbVariable
+    [Preserve(AllMembers = true)]
+    public class DbCachedVariable
     {
         string value;
         string field;
+        TimeSpan duration;
+        DateTime registered;
 
-        public DbVariable(string field, string value)
+        public bool IsObsolete
+        {
+            get
+            {
+                TimeSpan d = registered - DateTime.Now;
+                if (d > duration)
+                {
+                    return true;
+                }
+                return false;
+            }
+        }
+
+        public DbCachedVariable(string field, string value, TimeSpan duration)
         {
             this.value = value;
             this.field = field;
+            registered = DateTime.Now;
+            this.duration = duration;
         }
-        public DbVariable()
+
+        public DbCachedVariable()
         {
 
         }
