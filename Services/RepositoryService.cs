@@ -207,7 +207,7 @@ namespace XamEntityManager.Service
             JObject response = await addRequest(request, true);
             if (response == null) { return null; }
 
-            return response[type];
+            return response[type.Name];
         }
 
         public IEntity entityFromJson(Type type, JToken json)
