@@ -22,7 +22,10 @@ namespace XamEntityManager.Entity
             entity = e;
         }
     }
-	[Preserve(AllMembers = true)]
+
+
+
+    [Preserve(AllMembers = true)]
     public abstract class AEntity : IEntity, INotifyPropertyChanged
     {
         public bool Dirty { get; set; } = true;
@@ -37,6 +40,18 @@ namespace XamEntityManager.Entity
 
         public AEntity()
         {
+        }
+
+        public override bool Equals(object obj)
+        {
+            AEntity user1 = obj as AEntity;
+            if (user1 == null) { return false; }
+            return user1.Id == Id;
+        }
+
+        public override int GetHashCode()
+        {
+            return Id;
         }
 
         protected int id = 0;
