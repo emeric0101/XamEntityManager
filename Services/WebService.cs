@@ -205,7 +205,7 @@ namespace XamEntityManager.Service
             }
 
 
-            //Debug.WriteLine("postAsync " + id + "response : " + responseStr);
+            Debug.WriteLine("postAsync " + id + "response : " + responseStr);
             //Debug.WriteLine("postAsync " + id + " done");
 
             return parseResponse(responseStr);
@@ -215,8 +215,11 @@ namespace XamEntityManager.Service
         /// </summary>
         /// <param name="url"></param>
         /// <returns></returns>
-        public async Task<string> DownloadAndSaveFileAsync(string url, string filename, bool replace = false)
+        static int dlId = 0;
+        public async Task<string> DownloadAndSaveFileAsync(string url, string filename, bool replace = false, int IOExceptionCatched = 0)
         {
+            //System.Diagnostics.Debug.WriteLine("Downloading image " + dlId + " : " + url);
+
             PCLStorage.IFile file;
             try
             {
@@ -238,9 +241,17 @@ namespace XamEntityManager.Service
                     await streamFile.WriteAsync(fileBytes, 0, fileBytes.Length);
                     await streamFile.FlushAsync();
                 }
-                
- 
-  
+                //System.Diagnostics.Debug.WriteLine("Downloading image done " + dlId);
+            }
+            catch (System.IO.IOException e)
+            {
+                IOExceptionCatched++;
+                if (IOExceptionCatched > 2)
+                {
+                    throw e;
+                }
+                await Task.Delay(1000);
+                return await DownloadAndSaveFileAsync(url, filename, replace, IOExceptionCatched);
             }
             return file.Path;
 
