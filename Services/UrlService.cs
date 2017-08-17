@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms.Internals;
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.UrlService))]
 
 namespace XamEntityManager.Service
 {
@@ -31,12 +32,12 @@ namespace XamEntityManager.Service
 
         public string Servername { get; internal set; }
 
-        public string makeApi(string module, string action = null, string id = null, IDictionary<string, dynamic> args = null)
+        public string makeApi(string module, string action = null, string id = null, IDictionary<string, object> args = null)
         {
             module = char.ToUpper(module[0]) + module.Substring(1); // uc first
             if (args == null)
             {
-                args = new Dictionary<string, dynamic>();
+                args = new Dictionary<string, object>();
             }
             if (Sid != "")
             {

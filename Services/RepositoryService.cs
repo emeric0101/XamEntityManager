@@ -7,6 +7,9 @@ using XamEntityManager.Entity;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using Xamarin.Forms.Internals;
+using Xamarin.Forms;
+
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.RepositoryService))]
 
 namespace XamEntityManager.Service
 {
@@ -14,35 +17,32 @@ namespace XamEntityManager.Service
     public class RepositoryService
     {
         private IDictionary<Type, IDictionary<int, IEntity>> entities = new Dictionary<Type, IDictionary<int, IEntity>>();
-        public static Type[] inject = {
-            typeof(WebService),
-            typeof(UrlService),
-            typeof(DbService)
-        };
-        WebService web;
-        UrlService url;
-        DbService db;
+
+        WebService web = DependencyService.Get<WebService>();
+        UrlService url = DependencyService.Get<UrlService>();
+        DbService db = DependencyService.Get<DbService>();
         List<Request> requestStack = new List<Request>();
 		System.Threading.SemaphoreSlim RequestStackMutex = new System.Threading.SemaphoreSlim(1,1);
-		[Preserve]
-        public RepositoryService(WebService w, UrlService u, DbService d)
-        {
-            web = w;
-            url = u;
-            db = d;
-        }
+
 
         public void clearCache()
         {
             entities.Clear();
         }
-
-
-
-
-
-        private void pushIntoCache(Type type, IEntity obj)
+        /// <summary>
+        /// Refresh all models of type T cached
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void RefreshAllEntities<T>() where T : IEntity
         {
+            
+        }
+
+
+
+        private void pushIntoCache<T>(IEntity obj) where T : IEntity
+        {
+            Type type = typeof(T);
             if (!entities.Keys.Contains(type))
             {
                 entities[type] = new Dictionary<int, IEntity>();
@@ -56,8 +56,9 @@ namespace XamEntityManager.Service
 
             entities[type][obj.getId()] = obj;
         }
-        private IEntity getFromCache(Type type, int id)
+        private IEntity getFromCache<T>(int id) where T : IEntity
         {
+            Type type = typeof(T);
             if (!entities.Keys.Contains(type) || !entities[type].Keys.Contains(id))
             {
                 return null;
@@ -71,12 +72,12 @@ namespace XamEntityManager.Service
         /// </summary>
         /// <param name="requests"></param>
         /// <returns></returns>
-        private List<Dictionary<string, dynamic>> PrepareRequests(List<Request> requests)
+        private List<Dictionary<string, object>> PrepareRequests(List<Request> requests)
         {
-            List<Dictionary<string, dynamic>> ret = new List<Dictionary<string, dynamic>>();
+            List<Dictionary<string, object>> ret = new List<Dictionary<string, object>>();
             foreach (var request in requests)
             {
-                Dictionary<string, dynamic> values = new Dictionary<string, dynamic>();
+                Dictionary<string, object> values = new Dictionary<string, object>();
                 values["id"] = request.Id;
                 values["method"] = request.Method;
                 values["controller"] = request.Controller;
@@ -166,29 +167,26 @@ namespace XamEntityManager.Service
 			return r;
         }
 
-        async public Task<IEntity> findById<T>(int id, bool force = false)
-        {
-            return await findById(typeof(T), id, force);
-        }
 
-        async public Task<IEntity> findById(Type type, int id, bool force = false)
+
+        async public Task<IEntity> findById<T>(int id, bool force = false) where T : IEntity
         {
             IEntity obj;
             if (!force)
             {
-                obj = getFromCache(type, id);
+                obj = getFromCache<T>(id);
                 if (obj != null)
                 {
                     return obj;
                 }
             }
-            JToken json = await findByIdJson(type, id);
+            JToken json = await findByIdJson<T>(id);
             // not found
             if (json == null)
             {
                 return null;
             }
-            obj = entityFromJson(type, json);
+            obj = entityFromJson<T>(json);
             return obj;
         }
 
@@ -201,8 +199,9 @@ namespace XamEntityManager.Service
         /// <param name="id"></param>
         /// <param name="force"></param>
         /// <returns></returns>
-        async public Task<JToken> findByIdJson(Type type, int id)
+        async public Task<JToken> findByIdJson<T>(int id) where T : IEntity
         {
+            Type type = typeof(T);
             Request request = new Request("Entity", type.Name, id, null, type);
             JObject response = await addRequest(request, true);
             if (response == null) { return null; }
@@ -210,16 +209,17 @@ namespace XamEntityManager.Service
             return response[type.Name];
         }
 
-        public IEntity entityFromJson(Type type, JToken json)
+        public T entityFromJson<T>(JToken json) where T : IEntity
         {
             if (json == null)
             {
                 throw new Exception("RepositoryService::entityFromJson json is null");
             }
-            IEntity obj;
+            T obj;
+            Type type = typeof(T);
             try
             {
-                obj = (dynamic)Activator.CreateInstance(type);
+                obj = (T)Activator.CreateInstance(type);
             }
             catch (Exception e)
             {
@@ -228,14 +228,14 @@ namespace XamEntityManager.Service
 
             obj.updateEntityFromJson(this, json);
             // push into cache
-            pushIntoCache(type, obj);
-            pushIntoDb(type, obj);
+            pushIntoCache<T>(obj);
+            pushIntoDb<T>(obj);
             return obj;
         }
 
  
 
-        private void pushIntoDb(Type name, IEntity obj)
+        private void pushIntoDb<T>(IEntity obj) where T : IEntity
         {
             //db.saveEntity(obj);
         }
@@ -250,7 +250,7 @@ namespace XamEntityManager.Service
             var list = new List<IEntity>();
             foreach (JToken obj in array)
             {
-                list.Add(entityFromJson(type, obj));
+                list.Add(entityFromJson<T>(obj));
             }
             return list as List<T>;
         }
@@ -287,7 +287,7 @@ namespace XamEntityManager.Service
 			return tokenList;
 		}
 
-        public async Task<List<T>> findSome<T>(string method, int id, IDictionary<string, dynamic> args) where T : IEntity
+        public async Task<List<T>> findSome<T>(string method, int id, IDictionary<string, object> args) where T : IEntity
         {
             var type = typeof(T);
             Request request = new Request(type.Name, method, id, args, type);
@@ -306,11 +306,11 @@ namespace XamEntityManager.Service
 			foreach (var item in tokenList)
 			{
 				int itemId = item.Value<int>("id");
-				IEntity fromCache = getFromCache(type, itemId);
+				IEntity fromCache = getFromCache<T>(itemId);
 				if (fromCache == null)
 				{
 					// create from json
-					list.Add((T)entityFromJson(type, item));
+					list.Add((T)entityFromJson<T>(item));
 				}
 				else
 				{
@@ -338,7 +338,7 @@ namespace XamEntityManager.Service
         int id;
         int requestid = requestglobal++;
         Type entity;
-        IDictionary<string, dynamic> args;
+        IDictionary<string, object> args;
 		private TaskCompletionSource<JObject> done = new TaskCompletionSource<JObject>();
 					 public DateTime Created { get; } = new DateTime();
         // CAUTION RACE CONDITION HERE !!
@@ -408,7 +408,7 @@ namespace XamEntityManager.Service
             }
         }
 
-        public IDictionary<string, dynamic> Args
+        public IDictionary<string, object> Args
         {
             get
             {
@@ -438,7 +438,7 @@ namespace XamEntityManager.Service
             string controller,
             string method,
             int id,
-            IDictionary<string, dynamic> args,
+            IDictionary<string, object> args,
             Type entity
         )
         {

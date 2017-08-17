@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace XamEntityManager.Entity
 {
-    public interface IUser
+    public interface IUser : IEntity
     {
         string Sid { get; set; }
     }

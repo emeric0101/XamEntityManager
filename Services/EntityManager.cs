@@ -6,6 +6,8 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Forms.Internals;
+using Xamarin.Forms;
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.EntityManager))]
 
 namespace XamEntityManager.Service
 {
@@ -15,14 +17,10 @@ namespace XamEntityManager.Service
     }
     public class EntityManager
     {
-        public static Type[] inject = {
-            typeof(RepositoryService),
-            typeof(WebService),
-            typeof(UrlService)
-        };
-        private RepositoryService repo = null;
-        private WebService web = null;
-        private UrlService url = null;
+
+        private RepositoryService repo = DependencyService.Get<RepositoryService>();
+        private WebService web = DependencyService.Get<WebService>();
+        private UrlService url = DependencyService.Get<UrlService>();
         private List<IEntity> persistObjs = new List<IEntity>();
 
 		public event EventHandler<EntityManagerEventArg> entitiesUpdated = null;
@@ -33,11 +31,7 @@ namespace XamEntityManager.Service
             return repo;
         }
 
-		[Preserve]
-        public EntityManager(RepositoryService repo, WebService web, UrlService url)
-        {
-            this.repo = repo;this.web = web;this.url = url;
-        }
+	
         /// <summary>
         /// Remove all persist objs
         /// </summary>
@@ -121,7 +115,7 @@ namespace XamEntityManager.Service
         public async Task<bool> save(IEntity entity)
         {
             var entityName = entity.getName();
-            Dictionary<string, dynamic> data = new Dictionary<string, dynamic>();
+            Dictionary<string, object> data = new Dictionary<string, object>();
             data[entityName] = entity.serialize();
 			var curl = url.makeApi(entityName, "post", entity.getId().ToString());
 			try

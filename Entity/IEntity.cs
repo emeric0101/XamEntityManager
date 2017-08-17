@@ -10,7 +10,7 @@ namespace XamEntityManager.Entity
 {
     public interface IEntity
     {
-        Dictionary<string, dynamic> serialize();
+        Dictionary<string, object> serialize();
 
         int getId();
         void updateEntityFromJson(RepositoryService repo, JToken json);
@@ -20,12 +20,12 @@ namespace XamEntityManager.Entity
         /// <returns></returns>
         List<IEntity> getInternalEntities();
         string getName();
-        Task<InnerClassInfo> getInnerClassInfo(RepositoryService repo, string field, bool force = false);
-        Task<List<InnerClassInfo>> getInnerClassInfos(RepositoryService repo, string field, bool force = false);
-		void updateEntityFromEntity(IEntity newEntity);
+        Task<InnerClassInfo> getInnerClassInfo<T>(RepositoryService repo, string field, bool force = false) where T : IEntity;
+        Task<List<InnerClassInfo>> getInnerClassInfos<T>(RepositoryService repo, string field, bool force = false) where T : IEntity;
+        void updateEntityFromEntity(IEntity newEntity);
         void setRepo(RepositoryService r);
         RepositoryService getRepo();
-        Task refresh();
+        Task Refresh<T>() where T : IEntity;
         bool Dirty { get; }
     }
 }

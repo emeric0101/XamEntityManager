@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 using Xamarin.Forms;
 using Xamarin.Forms.Internals;
 using Newtonsoft.Json;
-
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.DbService))]
 namespace XamEntityManager.Service
 {
     public class NotFoundException : Exception { }

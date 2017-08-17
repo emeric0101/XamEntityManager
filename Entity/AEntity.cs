@@ -100,9 +100,9 @@ namespace XamEntityManager.Entity
             return internalEntites;
         }
 
-        public Dictionary<string, dynamic> serialize()
+        public Dictionary<string, object> serialize()
         { 
-            Dictionary<string, dynamic> values = new Dictionary<string, dynamic>();
+            Dictionary<string, object> values = new Dictionary<string, object>();
             var properties = GetType().GetRuntimeFields();
             foreach (FieldInfo property in properties)
             {
@@ -173,7 +173,7 @@ namespace XamEntityManager.Entity
         }
 
         [Obsolete("Assign directly and use OnPropertyChanged")]
-        public void setField(string name, dynamic value)
+        public void setField(string name, object value)
         {
 			
             name = name.ToLower();
@@ -200,7 +200,7 @@ namespace XamEntityManager.Entity
         /// <param name="repo"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public async Task<InnerClassInfo> getInnerClassInfo(RepositoryService repo, string field, bool force = false)
+        public async Task<InnerClassInfo> getInnerClassInfo<T>(RepositoryService repo, string field, bool force = false) where T : IEntity
         {
 			await InnerClassInfoSemaphone.WaitAsync();
 			var innerClassInfoLocal = innerClassInfo;
@@ -208,8 +208,8 @@ namespace XamEntityManager.Entity
 			if (innerClassInfoLocal == null || force)
             {
                 // we must download again the entity
-                var newModel = await repo.findById(GetType(),id, true);
-                var r = await newModel.getInnerClassInfo(repo, field);
+                var newModel = await repo.findById<T>(id, true);
+                var r = await newModel.getInnerClassInfo<T>(repo, field);
                 // maj du parent : 
                 innerClassInfoLocal[field] = r;
             }
@@ -225,7 +225,7 @@ namespace XamEntityManager.Entity
         /// <param name="repo"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public async Task<List<InnerClassInfo>> getInnerClassInfos(RepositoryService repo, string field, bool force)
+        public async Task<List<InnerClassInfo>> getInnerClassInfos<T>(RepositoryService repo, string field, bool force) where T : IEntity
         {
 			await InnerClassInfosSemaphone.WaitAsync();
 			IDictionary<string, List<InnerClassInfo>> localInnerClassInfos = innerClassInfos;
@@ -233,8 +233,8 @@ namespace XamEntityManager.Entity
 			if (localInnerClassInfos == null || force)
             {
                 // we must download again the entity
-                var newModel = await repo.findById(GetType(), id, true);
-                var r = await newModel.getInnerClassInfos(repo, field);
+                var newModel = await repo.findById<T>(id, true);
+                var r = await newModel.getInnerClassInfos<T>(repo, field);
                 // maj du parent : 
                 localInnerClassInfos[field] = r;
             }
@@ -247,18 +247,18 @@ namespace XamEntityManager.Entity
         }
         protected async Task<T> foreignKey<T>(RepositoryService repo, string field) where T: IEntity
         {
-            InnerClassInfo value = await getInnerClassInfo(repo, field);
+            InnerClassInfo value = await getInnerClassInfo<T>(repo, field);
             if (value == null)
             {
                 return default(T);
             }
-            T entity = (T)await repo.findById(typeof(T), value.id);
+            T entity = (T)await repo.findById<T>(value.id);
             return entity;
         }
 
         protected async Task<List<T>> foreignKeys<T>(RepositoryService repo, string field, bool force = false) where T : IEntity
         {
-            List<InnerClassInfo> value = await getInnerClassInfos(repo, field, force);
+            List<InnerClassInfo> value = await getInnerClassInfos<T>(repo, field, force);
             if (value == null)
             {
                 return null;
@@ -273,7 +273,7 @@ namespace XamEntityManager.Entity
                     // FATAL ERROR !!!
                     Environment.FailFast("foreignKeys : T type is different from server : " + v.entity + " vs " + typeof(T).Name);
                 }
-				entitiesFindTasks.Add(repo.findById(typeof(T), v.id, force).ContinueWith(async (arg) =>
+				entitiesFindTasks.Add(repo.findById<T>(v.id, force).ContinueWith(async (arg) =>
 				{
 					var e = arg.Result;
 					await entitiesSemaphore.WaitAsync();
@@ -401,9 +401,9 @@ namespace XamEntityManager.Entity
 
 
 
-        public async Task refresh()
+        public async Task Refresh<T>() where T : IEntity
         {
-            var json = await repo.findByIdJson(GetType(), Id);
+            var json = await repo.findByIdJson<T>(Id);
             updateEntityFromJson(repo, json);
         }
      }

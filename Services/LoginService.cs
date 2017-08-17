@@ -8,7 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 using Xamarin.Auth;
 using Xamarin.Forms.Internals;
+using Xamarin.Forms;
 
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.LoginService))]
 namespace XamEntityManager.Service
 {
 	public enum UserLogged
@@ -22,17 +24,10 @@ namespace XamEntityManager.Service
     }
     public class LoginService
     {
-        public static Type[] inject ={
-            typeof(UrlService),
-            typeof(WebService),
-            typeof(EntityManager),
-            typeof(DbService)
-        };
-
-        private UrlService url;
-        private WebService web;
-        private EntityManager em;
-        private DbService db;
+        private UrlService url = DependencyService.Get<UrlService>();
+        private WebService web = DependencyService.Get<WebService>();
+        private EntityManager em = DependencyService.Get<EntityManager>();
+        private DbService db = DependencyService.Get<DbService>();
         private string sid = "";
         private IUser user = null;
 		public UserLogged logged { get; protected set; } = UserLogged.Init;
@@ -50,7 +45,7 @@ namespace XamEntityManager.Service
         public event EventHandler<LoginServiceEventArgs> loginUpdate;
 
 		System.Threading.SemaphoreSlim loginSemaphone = new System.Threading.SemaphoreSlim(1, 1);
-		async private Task<IUser> getLoginInfo()
+		async private Task<T> getLoginInfo<T>() where T :  IUser
         {
 			await loginSemaphone.WaitAsync();
             string ss = db.getVariable("usersid");
@@ -65,9 +60,11 @@ namespace XamEntityManager.Service
             JObject response = null;
 			try
 			{
-				response = await web.getAsync(url.makeApi("login", "getLoginInfo"));
+                string urls = url.makeApi("login", "getLoginInfo");
+
+                response = await web.getAsync(urls);
 				RepositoryService repo = em.getRepository();
-				var userTmp = repo.entityFromJson(UserType, response["user"]) as IUser;
+				T userTmp = repo.entityFromJson<T>(response["user"]);
 				User = userTmp;
 
 				logged = User == null ? UserLogged.NotLogged : UserLogged.Logged;
@@ -75,14 +72,14 @@ namespace XamEntityManager.Service
 
 				User.Sid = sid;
 				db.setVariable("usersid", sid);
-				return user;
+				return (T)user;
 			}
 			catch (Exception e)
 			{
 				if (e is WebServiceBadResultException)
 				{
 					logged = UserLogged.Error;
-					return user;
+					return (T)user;
 				}
 				if (e is WebServiceFalseResultException && ((WebServiceFalseResultException)e).ErrorMsg == "NOT_LOGGED")
 				{
@@ -94,7 +91,7 @@ namespace XamEntityManager.Service
 						loginUpdate?.Invoke(this, new LoginServiceEventArgs(null));
 					}
 					logged = UserLogged.NotLogged; // attention quand on démarre l'app 
-					return null;
+					return default(T);
 				}
 				else
 				{
@@ -107,31 +104,17 @@ namespace XamEntityManager.Service
 			} 
         }
 
-        public async Task<IUser> loginFacebook(Account account) 
+        public async Task<T> loginFacebook<T>(Account account) where T : IUser
         {
-            Dictionary<string, dynamic> args = new Dictionary<string, dynamic>();
+            Dictionary<string, object> args = new Dictionary<string, object>();
             args["token"] = account.Properties["access_token"];
             var request = await web.getAsync(url.makeApi("user", "registerFacebook", null, args));
             var sid = request.Value<string>("sid");
             db.setVariable("usersid", sid);
-            return await this.getLoginInfo();
+            return await getLoginInfo<T>();
         }
 
- 
-
- 
-		[Preserve]
-        public LoginService(UrlService u, WebService w, EntityManager e, DbService d)
-        {
-            url = u;
-            web = w;
-            em = e;
-            db = d; 
-        }
-
-        public Type UserType { get; internal set; }
-
-        async public Task<bool> logout()
+        async public Task<bool> logout<T>() where T : IUser
         {
             db.setVariable("usersid", "");
             url.Sid = "";
@@ -147,11 +130,11 @@ namespace XamEntityManager.Service
 				}
 			}
 			user = null;
-			await getLoginInfo();
+			await getLoginInfo<T>();
             return true;
         }
 
-        async public Task<bool> login<T>(string mail, string password, bool stay) where T : IUser, IEntity
+        async public Task<bool> login<T>(string mail, string password, bool stay) where T : IUser
         {
             Dictionary<string, string> values = new Dictionary<string, string>();
             values["mail"] = mail;
@@ -182,7 +165,7 @@ namespace XamEntityManager.Service
             sid = response.Value<string>("sessionid");
             url.Sid = sid;
             db.setVariable("usersid", sid);
-            await getLoginInfo();
+            await getLoginInfo<T>();
             return true;
         }
 
@@ -191,19 +174,19 @@ namespace XamEntityManager.Service
 			loginUpdate?.Invoke(this,new LoginServiceEventArgs(User));
 		}
 
-		async public Task<IUser> getUser(bool refresh = false) 
+		async public Task<T> getUser<T>(bool refresh = false) where T : IUser
         {
 			
 			if (logged == UserLogged.NotLogged)
 			{
-				return null;
+				return default(T);
 			}
 
 			if (User == null || refresh)
             {
-                User = await getLoginInfo();
+                User = await getLoginInfo<T>();
             }
-            return User;
+            return (T)User;
         }
 
     }

@@ -8,7 +8,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
+using Xamarin.Forms;
 using Xamarin.Forms.Internals;
+[assembly: Xamarin.Forms.Dependency(typeof(XamEntityManager.Service.WebService))]
 
 namespace XamEntityManager.Service
 {
@@ -43,16 +45,9 @@ namespace XamEntityManager.Service
     public class WebServiceBadResultException : Exception { }
     public class WebService
     {
-        public static Type[] inject = {
-            typeof(UrlService)
-        };
-        UrlService urlService;
-		[Preserve]
-        public WebService(UrlService url)
-        {
-            urlService = url;
-        }
-    
+
+        UrlService urlService = DependencyService.Get<UrlService>();
+
 
         /// <summary>
         /// Determine if the response is success by json check
@@ -87,7 +82,7 @@ namespace XamEntityManager.Service
             return data;
         }
 
-        async public Task<JObject> getAsync(string module, string action = null, string id = null, Dictionary<string, dynamic> args = null)
+        async public Task<JObject> getAsync(string module, string action = null, string id = null, Dictionary<string, object> args = null)
         {
             string url = urlService.makeApi(module, action, id, args);
             return await getAsync(url);
