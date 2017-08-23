@@ -30,7 +30,7 @@ namespace XamEntityManager.Service
         private DbService db = DependencyService.Get<DbService>();
         private string sid = "";
         private IUser user = null;
-		public UserLogged logged { get; protected set; } = UserLogged.Init;
+		public UserLogged Logged { get; protected set; } = UserLogged.Init;
 
 		private IUser User
 		{
@@ -67,7 +67,7 @@ namespace XamEntityManager.Service
 				T userTmp = repo.entityFromJson<T>(response["user"]);
 				User = userTmp;
 
-				logged = User == null ? UserLogged.NotLogged : UserLogged.Logged;
+				Logged = User == null ? UserLogged.NotLogged : UserLogged.Logged;
 				loginUpdate?.Invoke(this, new LoginServiceEventArgs(User));
 
 				User.Sid = sid;
@@ -78,19 +78,19 @@ namespace XamEntityManager.Service
 			{
 				if (e is WebServiceBadResultException)
 				{
-					logged = UserLogged.Error;
+					Logged = UserLogged.Error;
 					return (T)user;
 				}
 				if (e is WebServiceFalseResultException && ((WebServiceFalseResultException)e).ErrorMsg == "NOT_LOGGED")
 				{
-					if (logged == UserLogged.Logged)
+					if (Logged == UserLogged.Logged)
 					{
 						// change state
-						logged = UserLogged.NotLogged;
+						Logged = UserLogged.NotLogged;
 						user = null;
 						loginUpdate?.Invoke(this, new LoginServiceEventArgs(null));
 					}
-					logged = UserLogged.NotLogged; // attention quand on démarre l'app 
+					Logged = UserLogged.NotLogged; // attention quand on démarre l'app 
 					return default(T);
 				}
 				else
@@ -177,7 +177,7 @@ namespace XamEntityManager.Service
 		async public Task<T> getUser<T>(bool refresh = false) where T : IUser
         {
 			
-			if (logged == UserLogged.NotLogged)
+			if (Logged == UserLogged.NotLogged)
 			{
 				return default(T);
 			}

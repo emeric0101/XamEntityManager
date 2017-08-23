@@ -207,8 +207,15 @@ namespace XamEntityManager.Entity
 			InnerClassInfoSemaphone.Release();
 			if (innerClassInfoLocal == null || force)
             {
+                // Reflexion to get the entity
+                Type ex = typeof(RepositoryService);
+                MethodInfo mi = ex.GetRuntimeMethod("findById", new Type[] { typeof(int), typeof(bool) });
+                mi = mi.MakeGenericMethod(GetType());
                 // we must download again the entity
-                var newModel = await repo.findById<T>(id, true);
+                T newModel = await (mi.Invoke(this, new object[] { id, force }) as Task<T>);
+
+                // we must download again the entity
+                //var newModel = await repo.findById<T>(id, true);
                 var r = await newModel.getInnerClassInfo<T>(repo, field);
                 // maj du parent : 
                 innerClassInfoLocal[field] = r;
@@ -227,13 +234,21 @@ namespace XamEntityManager.Entity
         /// <returns></returns>
         public async Task<List<InnerClassInfo>> getInnerClassInfos<T>(RepositoryService repo, string field, bool force) where T : IEntity
         {
+            
+            var t = typeof(T);
 			await InnerClassInfosSemaphone.WaitAsync();
 			IDictionary<string, List<InnerClassInfo>> localInnerClassInfos = innerClassInfos;
 			InnerClassInfosSemaphone.Release();
 			if (localInnerClassInfos == null || force)
             {
+                // Reflexion to get the entity
+                Type ex = typeof(RepositoryService);
+                MethodInfo mi = ex.GetRuntimeMethod("findById", new Type[] { typeof(int), typeof(bool) });
+                mi = mi.MakeGenericMethod(GetType());
                 // we must download again the entity
-                var newModel = await repo.findById<T>(id, true);
+                T newModel = await (mi.Invoke(this, new object[] { id, force }) as Task<T>);
+
+                //var newModel = await repo.findById<T>(id, true);
                 var r = await newModel.getInnerClassInfos<T>(repo, field);
                 // maj du parent : 
                 localInnerClassInfos[field] = r;
@@ -344,6 +359,9 @@ namespace XamEntityManager.Entity
                 case "System.String":
                     string test = value.Value<string>();
                     prop.SetValue(this, test);
+                    break;
+                case "System.Boolean":
+                    prop.SetValue(this, value.Value<bool>());
                     break;
             }
         }

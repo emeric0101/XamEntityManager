@@ -143,21 +143,16 @@ namespace XamEntityManager.Service
                 var streamContent = new StreamContent(file);
                 streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
                 content.Add(streamContent, "file", "file.jpg");
-                try
+            
+                HttpResponseMessage msg = await httpClient.PostAsync(urlService.makeApi(module, action), content);
+                if (msg == null)
                 {
-                    HttpResponseMessage msg = await httpClient.PostAsync(urlService.makeApi(module, action), content);
-                    if (msg == null)
-                    {
-                        throw new Exception("Unable to send image");
-                    }
-                    var responseStr = await msg.Content.ReadAsStringAsync();
-                    //Debug.WriteLine("postAsync response : " + responseStr);
-                    return parseResponse(responseStr);
+                    throw new Exception("Unable to send image");
                 }
-                catch (Exception e)
-                {
-                    throw new WebServiceBadResultException();
-                }
+                var responseStr = await msg.Content.ReadAsStringAsync();
+                //Debug.WriteLine("postAsync response : " + responseStr);
+                return parseResponse(responseStr);
+                
             }
         }
 

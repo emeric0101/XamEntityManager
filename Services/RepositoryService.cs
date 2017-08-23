@@ -29,15 +29,7 @@ namespace XamEntityManager.Service
         {
             entities.Clear();
         }
-        /// <summary>
-        /// Refresh all models of type T cached
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        public void RefreshAllEntities<T>() where T : IEntity
-        {
-            
-        }
-
+   
 
 
         private void pushIntoCache<T>(IEntity obj) where T : IEntity
@@ -291,9 +283,9 @@ namespace XamEntityManager.Service
         {
             var type = typeof(T);
             Request request = new Request(type.Name, method, id, args, type);
-            //JObject response = await addRequest(request);
+           // JObject response = await addRequest(request);
 			string u = this.url.makeApi(type.Name, method, id.ToString(), args);
-			var response = await web.postAsync(u, args);
+		    var response = await web.postAsync(u, args);
             // check existance of index
             if (response == null || response[type.Name + "s"] == null)
             {
