@@ -20,8 +20,8 @@ namespace XamEntityManager.Entity
         /// <returns></returns>
         List<IEntity> getInternalEntities();
         string getName();
-        Task<InnerClassInfo> getInnerClassInfo<T>(RepositoryService repo, string field, bool force = false) where T : IEntity;
-        Task<List<InnerClassInfo>> getInnerClassInfos<T>(RepositoryService repo, string field, bool force = false) where T : IEntity;
+        Task<InnerClassInfo> getInnerClassInfo<T, U>(RepositoryService repo, string field, bool force = false) where T : IEntity where U : IEntity;
+        Task<List<InnerClassInfo>> getInnerClassInfos<T, U>(RepositoryService repo, string field, bool force = false) where T : IEntity where U : IEntity;
         void updateEntityFromEntity(IEntity newEntity);
         void setRepo(RepositoryService r);
         RepositoryService getRepo();

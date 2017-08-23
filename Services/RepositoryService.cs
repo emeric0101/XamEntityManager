@@ -48,15 +48,15 @@ namespace XamEntityManager.Service
 
             entities[type][obj.getId()] = obj;
         }
-        private IEntity getFromCache<T>(int id) where T : IEntity
+        private T getFromCache<T>(int id) where T : IEntity
         {
             Type type = typeof(T);
             if (!entities.Keys.Contains(type) || !entities[type].Keys.Contains(id))
             {
-                return null;
+                return default(T);
                 //return getFromDb(name, id);
             }
-            return entities[type][id];
+            return (T)entities[type][id];
         }
 
         /// <summary>
@@ -161,9 +161,9 @@ namespace XamEntityManager.Service
 
 
 
-        async public Task<IEntity> findById<T>(int id, bool force = false) where T : IEntity
+        async public Task<T> findById<T>(int id, bool force = false) where T : IEntity
         {
-            IEntity obj;
+            T obj;
             if (!force)
             {
                 obj = getFromCache<T>(id);
@@ -176,7 +176,7 @@ namespace XamEntityManager.Service
             // not found
             if (json == null)
             {
-                return null;
+                return default(T);
             }
             obj = entityFromJson<T>(json);
             return obj;

@@ -194,29 +194,32 @@ namespace XamEntityManager.Entity
 			OnPropertyChanged(name); // à tester !!
         }
 
+
+
+
         /// <summary>
         /// Get a property into the class (and check if exist)
         /// </summary>
+        /// <typeparam name="T">Target entity</typeparam>
+        /// <typeparam name="U">Current entity</typeparam>
         /// <param name="repo"></param>
         /// <param name="field"></param>
         /// <returns></returns>
-        public async Task<InnerClassInfo> getInnerClassInfo<T>(RepositoryService repo, string field, bool force = false) where T : IEntity
+        public async Task<InnerClassInfo> getInnerClassInfo<T, U>(RepositoryService repo, string field, bool force = false) where T : IEntity where U : IEntity
         {
-			await InnerClassInfoSemaphone.WaitAsync();
+            if (typeof(U) != GetType())
+            {
+                throw new Exception("GetInnerclass : U must be from the class type !!");
+            }
+            await InnerClassInfoSemaphone.WaitAsync();
 			var innerClassInfoLocal = innerClassInfo;
 			InnerClassInfoSemaphone.Release();
 			if (innerClassInfoLocal == null || force)
             {
-                // Reflexion to get the entity
-                Type ex = typeof(RepositoryService);
-                MethodInfo mi = ex.GetRuntimeMethod("findById", new Type[] { typeof(int), typeof(bool) });
-                mi = mi.MakeGenericMethod(GetType());
-                // we must download again the entity
-                T newModel = await (mi.Invoke(this, new object[] { id, force }) as Task<T>);
+                U newModel = await repo.findById<U>(id, force);
 
                 // we must download again the entity
-                //var newModel = await repo.findById<T>(id, true);
-                var r = await newModel.getInnerClassInfo<T>(repo, field);
+                var r = await newModel.getInnerClassInfo<T, U>(repo, field);
                 // maj du parent : 
                 innerClassInfoLocal[field] = r;
             }
@@ -226,30 +229,33 @@ namespace XamEntityManager.Entity
             return innerClassInfoLocal[field];
         }
 
+
         /// <summary>
-        /// Get a property into the class (and check if exist)
+        /// 
         /// </summary>
+        /// <typeparam name="T">Target entity</typeparam>
+        /// <typeparam name="U">Current entity</typeparam>
         /// <param name="repo"></param>
         /// <param name="field"></param>
+        /// <param name="force"></param>
         /// <returns></returns>
-        public async Task<List<InnerClassInfo>> getInnerClassInfos<T>(RepositoryService repo, string field, bool force) where T : IEntity
+        public async Task<List<InnerClassInfo>> getInnerClassInfos<T, U>(RepositoryService repo, string field, bool force) where T : IEntity where U : IEntity
         {
             
             var t = typeof(T);
 			await InnerClassInfosSemaphone.WaitAsync();
 			IDictionary<string, List<InnerClassInfo>> localInnerClassInfos = innerClassInfos;
+            if (typeof(U) != GetType())
+            {
+                throw new Exception("GetInnerclass : U must be from the class type !!");
+            }
 			InnerClassInfosSemaphone.Release();
 			if (localInnerClassInfos == null || force)
             {
-                // Reflexion to get the entity
-                Type ex = typeof(RepositoryService);
-                MethodInfo mi = ex.GetRuntimeMethod("findById", new Type[] { typeof(int), typeof(bool) });
-                mi = mi.MakeGenericMethod(GetType());
-                // we must download again the entity
-                T newModel = await (mi.Invoke(this, new object[] { id, force }) as Task<T>);
+                U newModel = await repo.findById<U>(id, true);
 
                 //var newModel = await repo.findById<T>(id, true);
-                var r = await newModel.getInnerClassInfos<T>(repo, field);
+                var r = await newModel.getInnerClassInfos<T, U>(repo, field, false);
                 // maj du parent : 
                 localInnerClassInfos[field] = r;
             }
@@ -260,9 +266,11 @@ namespace XamEntityManager.Entity
 
             return localInnerClassInfos[field];
         }
-        protected async Task<T> foreignKey<T>(RepositoryService repo, string field) where T: IEntity
+        /// <typeparam name="T">Target entity</typeparam>
+        /// <typeparam name="U">Current entity</typeparam>
+        protected async Task<T> foreignKey<T, U>(RepositoryService repo, string field) where T: IEntity where U : IEntity
         {
-            InnerClassInfo value = await getInnerClassInfo<T>(repo, field);
+            InnerClassInfo value = await getInnerClassInfo<T, U>(repo, field);
             if (value == null)
             {
                 return default(T);
@@ -271,9 +279,9 @@ namespace XamEntityManager.Entity
             return entity;
         }
 
-        protected async Task<List<T>> foreignKeys<T>(RepositoryService repo, string field, bool force = false) where T : IEntity
+        protected async Task<List<T>> foreignKeys<T, U>(RepositoryService repo, string field, bool force = false) where T : IEntity where U : IEntity
         {
-            List<InnerClassInfo> value = await getInnerClassInfos<T>(repo, field, force);
+            List<InnerClassInfo> value = await getInnerClassInfos<T, U>(repo, field, force);
             if (value == null)
             {
                 return null;
