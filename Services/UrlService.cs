@@ -58,7 +58,7 @@ namespace XamEntityManager.Service
             var first = true;
             foreach (var value in args)
             {
-                if (first) { url += "?"; first = false; }
+                if (first) { url += "/?"; first = false; }
                 else { url += "&"; }
                 url += value.Key + "=" + value.Value;
             }

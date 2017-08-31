@@ -23,6 +23,7 @@ namespace XamEntityManager.Service
         }
     }
 
+
     public class WebServiceFalseResultException : Exception {
         string errorMsg;
         public WebServiceFalseResultException(string errorMsg)
@@ -136,15 +137,30 @@ namespace XamEntityManager.Service
 
         async public Task<JObject> postJpgAsync(string module, string action, Stream file)
         {
-            using (HttpClient httpClient = new HttpClient())
+             using (HttpClient httpClient = new HttpClient())
             {
-                httpClient.DefaultRequestHeaders.TransferEncodingChunked = true;
-                MultipartFormDataContent content = new MultipartFormDataContent();
-                var streamContent = new StreamContent(file);
-                streamContent.Headers.ContentType = MediaTypeHeaderValue.Parse("image/jpeg");
-                content.Add(streamContent, "file", "file.jpg");
-            
-                HttpResponseMessage msg = await httpClient.PostAsync(urlService.makeApi(module, action), content);
+                HttpResponseMessage msg = null;
+                try
+                {
+                    MultipartFormDataContent content = new MultipartFormDataContent();
+                    Byte[] bytes = new Byte[file.Length];
+                    await file.ReadAsync(bytes, 0, Convert.ToInt32(file.Length));
+
+                    ByteArrayContent baContent = new ByteArrayContent(bytes);
+                    content.Add(baContent, "file", "file.jpg");
+                    httpClient.Timeout = TimeSpan.FromMinutes(2);
+                    string url = urlService.makeApi(module, action);
+                    Debug.WriteLine("postJpgAsync : " + url);
+                    msg = await httpClient.PostAsync(url, content);
+
+                }catch (Exception e)
+                {
+                    if (e is TaskCanceledException && !(e as TaskCanceledException).CancellationToken.IsCancellationRequested)
+                    {
+                        throw new WebServiceFalseResultException("postJpgAsync timeout");
+                    }
+                    throw e;
+                }
                 if (msg == null)
                 {
                     throw new Exception("Unable to send image");
