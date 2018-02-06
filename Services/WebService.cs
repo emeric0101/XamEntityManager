@@ -48,7 +48,7 @@ namespace XamEntityManager.Service
     {
 
         UrlService urlService = DependencyService.Get<UrlService>();
-
+        HttpClient httpClient = new HttpClient();
 
         /// <summary>
         /// Determine if the response is success by json check
@@ -99,26 +99,25 @@ namespace XamEntityManager.Service
             var id = postId++;
             Debug.WriteLine("getAsync : " + id + " " + url);
             HttpResponseMessage msg = null;
-            using (HttpClient httpClient = new HttpClient())
+
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "doggiappli");
+            try
             {
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "doggiappli");
-                try
+                msg = await httpClient.GetAsync(url);
+                if (msg == null)
                 {
-                    msg = await httpClient.GetAsync(url);
-                    if (msg == null)
-                    {
-                        Debug.WriteLine("getAsync : msg is null");
-                        throw new WebServiceBadResultException();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Debug.WriteLine("getAsync Error" + e.Message);
+                    Debug.WriteLine("getAsync : msg is null");
                     throw new WebServiceBadResultException();
                 }
-                Debug.WriteLine("getAsync " + id + " Done ");
-                return msg;
             }
+            catch (Exception e)
+            {
+                Debug.WriteLine("getAsync Error" + e.Message);
+                throw new WebServiceBadResultException();
+            }
+            Debug.WriteLine("getAsync " + id + " Done ");
+            return msg;
+            
         }
 
         /// <summary>
@@ -189,26 +188,25 @@ namespace XamEntityManager.Service
            	Debug.WriteLine("postAsync " + id + " " + url + " : " + " HTTP " + ": " + json);
             HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
-            using (HttpClient httpClient = new HttpClient())
+          
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager");
+            try
             {
-                httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager");
-                try
-                {
 
-                    HttpResponseMessage msg = await httpClient.PostAsync(url, content);
-                    if (msg == null)
-                    {
-                        Debug.WriteLine("postAsync : msg is null");
-                        throw new WebServiceBadResultException();
-                    }
-                    responseStr = await msg.Content.ReadAsStringAsync();
-                }
-                catch (Exception e)
+                HttpResponseMessage msg = await httpClient.PostAsync(url, content);
+                if (msg == null)
                 {
-                    Debug.WriteLine("postAsync Error" + e.Message);
+                    Debug.WriteLine("postAsync : msg is null");
                     throw new WebServiceBadResultException();
                 }
+                responseStr = await msg.Content.ReadAsStringAsync();
             }
+            catch (Exception e)
+            {
+                Debug.WriteLine("postAsync Error" + e.Message);
+                throw new WebServiceBadResultException();
+            }
+            
 
 
             Debug.WriteLine("postAsync " + id + "response : " + responseStr);
