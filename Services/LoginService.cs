@@ -6,7 +6,6 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Xamarin.Auth;
 using Xamarin.Forms.Internals;
 using Xamarin.Forms;
 
@@ -45,6 +44,10 @@ namespace XamEntityManager.Service
         public event EventHandler<LoginServiceEventArgs> loginUpdate;
 
 		System.Threading.SemaphoreSlim loginSemaphone = new System.Threading.SemaphoreSlim(1, 1);
+
+
+
+
 		async private Task<T> getLoginInfo<T>() where T :  IUser
         {
 			await loginSemaphone.WaitAsync();
@@ -104,7 +107,7 @@ namespace XamEntityManager.Service
 			} 
         }
 
-        public async Task<T> loginFacebook<T>(Account account) where T : IUser
+      /*  public async Task<T> loginFacebook<T>(Account account) where T : IUser
         {
             Dictionary<string, object> args = new Dictionary<string, object>();
             args["token"] = account.Properties["access_token"];
@@ -112,7 +115,7 @@ namespace XamEntityManager.Service
             var sid = request.Value<string>("sid");
             db.setVariable("usersid", sid);
             return await getLoginInfo<T>();
-        }
+        }*/
 
         async public Task<bool> logout<T>() where T : IUser
         {
@@ -177,7 +180,7 @@ namespace XamEntityManager.Service
 		async public Task<T> getUser<T>(bool refresh = false) where T : IUser
         {
 			
-			if (Logged == UserLogged.NotLogged)
+			if (!refresh && Logged == UserLogged.NotLogged)
 			{
 				return default(T);
 			}
