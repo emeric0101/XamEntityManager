@@ -43,12 +43,20 @@ namespace XamEntityManager.Service
             }
         }
     }
-    public class WebServiceBadResultException : Exception { }
+    public class WebServiceBadResultException : Exception {
+        
+        public WebServiceBadResultException(string msg) :base(msg) { }
+    }
     public class WebService
     {
 
         UrlService urlService = DependencyService.Get<UrlService>();
         HttpClient httpClient = new HttpClient();
+
+        public WebService()
+        {
+            httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager10");
+        }
 
         /// <summary>
         /// Determine if the response is success by json check
@@ -69,7 +77,7 @@ namespace XamEntityManager.Service
 
             if (data["success"] == null)
             {
-                throw new WebServiceBadResultException();
+                throw new WebServiceBadResultException("success value is null");
             }
             if (data.Value<Boolean>("success") == false)
             {
@@ -100,20 +108,20 @@ namespace XamEntityManager.Service
             Debug.WriteLine("getAsync : " + id + " " + url);
             HttpResponseMessage msg = null;
 
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "doggiappli");
             try
             {
                 msg = await httpClient.GetAsync(url);
                 if (msg == null)
                 {
                     Debug.WriteLine("getAsync : msg is null");
-                    throw new WebServiceBadResultException();
+                    throw new WebServiceBadResultException("json response is null");
                 }
             }
             catch (Exception e)
             {
                 Debug.WriteLine("getAsync Error" + e.Message);
-                throw new WebServiceBadResultException();
+                throw new WebServiceBadResultException("getAsync Error : " + e.Message);
+
             }
             Debug.WriteLine("getAsync " + id + " Done ");
             return msg;
@@ -189,7 +197,6 @@ namespace XamEntityManager.Service
             HttpContent content = new StringContent(json, Encoding.UTF8, "application/json");
 
           
-            httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager");
             try
             {
 
@@ -197,14 +204,14 @@ namespace XamEntityManager.Service
                 if (msg == null)
                 {
                     Debug.WriteLine("postAsync : msg is null");
-                    throw new WebServiceBadResultException();
+                    throw new WebServiceBadResultException("postAsync : msg is null");
                 }
                 responseStr = await msg.Content.ReadAsStringAsync();
             }
             catch (Exception e)
             {
                 Debug.WriteLine("postAsync Error" + e.Message);
-                throw new WebServiceBadResultException();
+                throw new WebServiceBadResultException("postAsync : " + e.Message);
             }
             
 
@@ -265,7 +272,9 @@ namespace XamEntityManager.Service
 		{
 			using (HttpClient httpClient = new HttpClient())
 			{
-				var response = await httpClient.GetAsync(url);
+                httpClient.DefaultRequestHeaders.Add("User-Agent", "xamentitymanager10");
+
+                var response = await httpClient.GetAsync(url);
 				HttpContent content = response.Content;
 				return await content.ReadAsByteArrayAsync();
 			}
